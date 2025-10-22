@@ -194,7 +194,7 @@ class PortfolioAgent:
   - Build generic "get pool data", "check LP health" functions
   - Let protocol-specific logic be data-driven
 - **Chain Flexible:** Support multi-chain without hardcoding chain specifics
-  - Ethereum, BNB Smart Chain (BSC), Base, Arbitrum, Optimism, Polygon, Solana
+  - Ethereum, BNB Smart Chain (BSC), Base, Arbitrum, Optimism, Polygon, Solana (7 chains)
   - Single codebase works across all chains
 - **Composable:** Small, focused tools that combine for complex operations
 - **Error Resilient:** Graceful degradation when chains/protocols fail
@@ -373,6 +373,7 @@ class Settings(BaseSettings):
     base_rpc_url: str
     arbitrum_rpc_url: str
     optimism_rpc_url: str
+    polygon_rpc_url: str
     solana_rpc_url: str
 
     class Config:
