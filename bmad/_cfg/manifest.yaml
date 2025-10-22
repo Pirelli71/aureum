@@ -1,0 +1,12 @@
+installation:
+  version: 6.0.0-alpha.0
+  installDate: '2025-10-21T14:39:33.412Z'
+  lastUpdated: '2025-10-21T14:39:33.412Z'
+modules:
+  - core
+  - bmb
+  - bmm
+  - cis
+ides:
+  - claude-code
+  - github-copilot
