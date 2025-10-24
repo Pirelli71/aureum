@@ -13,4 +13,4 @@ tea_use_mcp_enhancements: true
 user_name: Steffen
 communication_language: English
 document_output_language: English
-output_folder: '{project-root}/''/Users/steffenpietratus/Documents/Projects/Aureum/01 Docs'''
+output_folder: '{project-root}/docs'
