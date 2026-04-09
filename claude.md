@@ -1,3 +1,7 @@
+IGNORE THIS FILE -THIS FILE IS IN PROGRESS
+
+
+
 # Aureum DeFi Intelligence System - Development Guidelines
 
 **CRITICAL: READ AND FOLLOW THIS DOCUMENT BEFORE ANY DEVELOPMENT**
@@ -129,63 +133,49 @@ The project structure will follow the **form follows function** principle. Rathe
 
 ### Agent Implementation Pattern
 
+**CRITICAL:** Use **Pydantic AI** (NOT Anthropic Agents SDK) for model-agnostic architecture
+
 ```python
 # agents/portfolio_agent.py
-from claude_agent_sdk import query, ClaudeSDKClient, tool, create_sdk_mcp_server
+from pydantic_ai import Agent
+from pydantic import BaseModel
 from typing import Dict, List, Optional
 import asyncio
 
-# Tool definitions with @tool decorator
-@tool(
-    name="get_portfolio_health",
-    description="Analyze portfolio health across all chains",
-    input_schema={
-        "type": "object",
-        "properties": {
-            "address": {"type": "string", "description": "Wallet address"},
-            "chains": {"type": "array", "items": {"type": "string"}}
-        },
-        "required": ["address"]
-    }
+# Define type-safe data models
+class PortfolioHealth(BaseModel):
+    """Type-safe portfolio health response"""
+    overall_score: float
+    positions_count: int
+    total_value_usd: float
+    at_risk_positions: List[str]
+    opportunities: List[Dict]
+
+# Create Pydantic AI agent
+portfolio_agent = Agent(
+    'openai:gpt-4',  # Or 'anthropic:claude-3-5-sonnet' - easy to swap
+    result_type=PortfolioHealth,
+    system_prompt="""
+    You are the Aureum Portfolio Agent specializing in DeFi portfolio analysis.
+    Always use multi-chain approach and protocol-agnostic design.
+    """
 )
+
+@portfolio_agent.tool
 async def get_portfolio_health(address: str, chains: List[str] = None) -> Dict:
     """
     Multi-chain portfolio health analysis.
-    Flexible design - works with any protocol/chain combination.
+    Chain-flexible design - works with ANY blockchain without hardcoding.
     """
     # Implementation that doesn't need rewriting for new chains
     pass
 
-# Create MCP server with tools
-portfolio_server = create_sdk_mcp_server(
-    name="portfolio_tools",
-    version="1.0.0",
-    tools=[get_portfolio_health]
-)
-
-# Agent configuration
-class PortfolioAgent:
-    def __init__(self):
-        self.options = ClaudeAgentOptions(
-            mcp_servers={"portfolio": portfolio_server},
-            allowed_tools=["get_portfolio_health"],
-            max_thinking_tokens=8000,
-            append_system_prompt="""
-            You are the Aureum Portfolio Agent specializing in DeFi portfolio analysis.
-            Always use multi-chain approach and protocol-agnostic design.
-            """
-        )
-    
-    async def analyze(self, prompt: str):
-        """Single analysis query"""
-        async for message in query(prompt, self.options):
-            yield message
-    
-    async def continuous_monitor(self):
-        """Continuous monitoring with session management"""
-        async with ClaudeSDKClient(self.options) as client:
-            # Maintains conversation context
-            pass
+# Usage
+async def analyze_portfolio(wallet_address: str):
+    result = await portfolio_agent.run(
+        f"Analyze portfolio health for {wallet_address}"
+    )
+    return result.data  # Type-safe PortfolioHealth object
 ```
 
 ### Tool Design Principles
@@ -194,8 +184,9 @@ class PortfolioAgent:
   - Build generic "get pool data", "check LP health" functions
   - Let protocol-specific logic be data-driven
 - **Chain Flexible:** Support multi-chain without hardcoding chain specifics
-  - Ethereum, BNB Smart Chain (BSC), Base, Arbitrum, Optimism, Polygon, Solana (7 chains)
-  - Single codebase works across all chains
+  - System supports ANY EVM chain (Ethereum, Base, Arbitrum, Optimism, Polygon, BSC, etc.) + Solana
+  - **POC Scope:** Testing with Steffen's 7-chain portfolio (ETH, BSC, Base, Arbitrum, Optimism, Polygon, Solana)
+  - Single codebase works across all chains without modification
 - **Composable:** Small, focused tools that combine for complex operations
 - **Error Resilient:** Graceful degradation when chains/protocols fail
 
@@ -205,7 +196,7 @@ class PortfolioAgent:
 ```python
 # When approaching 500 lines, IMMEDIATELY split into modules:
 # ❌ BAD: portfolio.py with 800 lines
-# ✅ GOOD: 
+# ✅ GOOD:
 #   - portfolio/base.py (200 lines)
 #   - portfolio/analytics.py (250 lines)
 #   - portfolio/optimizer.py (200 lines)
@@ -413,15 +404,15 @@ def calculate_impermanent_loss(
 ) -> float:
     """
     Calculate impermanent loss for a liquidity position.
-    
+
     Args:
         initial_price: Price ratio when position was opened
         current_price: Current price ratio
         pool_share: Share of the pool (0-1)
-    
+
     Returns:
         Impermanent loss as a percentage (0-100)
-    
+
     Example:
         >>> calculate_impermanent_loss(1.0, 1.5, 0.01)
         2.34  # 2.34% IL
